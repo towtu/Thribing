@@ -1,24 +1,51 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+import "../global.css";
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useEffect } from "react";
+import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import * as SplashScreen from "expo-splash-screen";
+import {
+  useFonts,
+  Nunito_400Regular,
+  Nunito_600SemiBold,
+  Nunito_700Bold,
+  Nunito_800ExtraBold,
+} from "@expo-google-fonts/nunito";
+import { useAuthListener } from "@/features/auth/hooks";
 
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+// Keep splash screen visible while fonts load
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  const [fontsLoaded] = useFonts({
+    Nunito_400Regular,
+    Nunito_600SemiBold,
+    Nunito_700Bold,
+    Nunito_800ExtraBold,
+  });
+
+  // Subscribe to Firebase auth state changes
+  useAuthListener();
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <>
+      <StatusBar style="light" />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: "#1A1A2E" },
+        }}
+      />
+    </>
   );
 }
