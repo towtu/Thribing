@@ -1,13 +1,10 @@
-import { useState } from "react";
 import { View, Text } from "react-native";
 import { ScreenContainer } from "@/core_ui/components";
-import { CartoonCard, CartoonButton } from "@/core_ui/components";
+import { CartoonCard } from "@/core_ui/components";
 import { GoogleSignInButton } from "@/features/auth/components/GoogleSignInButton";
 import { EmailSignInForm } from "@/features/auth/components/EmailSignInForm";
 
 export default function LoginScreen() {
-  const [showEmail, setShowEmail] = useState(false);
-
   return (
     <ScreenContainer>
       <View className="flex-1 justify-center items-center gap-6 py-8">
@@ -45,16 +42,18 @@ export default function LoginScreen() {
 
             <GoogleSignInButton />
 
-            {showEmail ? (
-              <EmailSignInForm />
-            ) : (
-              <CartoonButton
-                title="Continue with Email"
-                variant="cyan"
-                size="lg"
-                onPress={() => setShowEmail(true)}
-              />
-            )}
+            <View className="flex-row items-center gap-3">
+              <View className="flex-1 h-[1px] bg-gray-300" />
+              <Text
+                className="text-xs text-gray-400"
+                style={{ fontFamily: "Nunito_600SemiBold" }}
+              >
+                or
+              </Text>
+              <View className="flex-1 h-[1px] bg-gray-300" />
+            </View>
+
+            <EmailSignInForm />
           </View>
         </CartoonCard>
       </View>

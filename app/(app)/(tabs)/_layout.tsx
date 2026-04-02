@@ -1,16 +1,37 @@
 import { Tabs } from "expo-router";
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import {
+  Home,
+  Zap,
+  CalendarCheck,
+  ListTodo,
+  User,
+  type LucideIcon,
+} from "lucide-react-native";
 
-function TabIcon({ label, emoji, focused }: { label: string; emoji: string; focused: boolean }) {
+const VIOLET = "#8B5CF6";
+const GRAY = "#6B7280";
+
+function TabIcon({
+  Icon,
+  focused,
+}: {
+  Icon: LucideIcon;
+  focused: boolean;
+}) {
   return (
-    <View className="items-center justify-center pt-2">
-      <Text className="text-xl">{emoji}</Text>
-      <Text
-        className={`text-xs mt-0.5 ${focused ? "text-violet-electric" : "text-gray-400"}`}
-        style={{ fontFamily: "Nunito_700Bold" }}
-      >
-        {label}
-      </Text>
+    <View className="items-center justify-center gap-0.5" style={{ paddingTop: 6 }}>
+      {/* Active indicator pill */}
+      {focused && (
+        <View
+          className="absolute -top-2 w-8 h-1 rounded-full bg-violet-electric"
+        />
+      )}
+      <Icon
+        size={22}
+        color={focused ? VIOLET : GRAY}
+        strokeWidth={focused ? 2.5 : 2}
+      />
     </View>
   );
 }
@@ -24,50 +45,52 @@ export default function TabsLayout() {
           backgroundColor: "#2A2A4A",
           borderTopWidth: 3,
           borderTopColor: "#111827",
-          height: 70,
-          paddingBottom: 8,
+          height: 72,
+          paddingBottom: 4,
+          paddingTop: 4,
         },
-        tabBarShowLabel: false,
+        tabBarActiveTintColor: VIOLET,
+        tabBarInactiveTintColor: GRAY,
+        tabBarLabelStyle: {
+          fontFamily: "Nunito_700Bold",
+          fontSize: 10,
+          marginTop: 2,
+        },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon label="Home" emoji="🏠" focused={focused} />
-          ),
+          title: "Home",
+          tabBarIcon: ({ focused }) => <TabIcon Icon={Home} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="habits"
         options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon label="Habits" emoji="⚡" focused={focused} />
-          ),
+          title: "Habits",
+          tabBarIcon: ({ focused }) => <TabIcon Icon={Zap} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="dailies"
         options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon label="Dailies" emoji="📅" focused={focused} />
-          ),
+          title: "Dailies",
+          tabBarIcon: ({ focused }) => <TabIcon Icon={CalendarCheck} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="todos"
         options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon label="To-Dos" emoji="✅" focused={focused} />
-          ),
+          title: "To-Dos",
+          tabBarIcon: ({ focused }) => <TabIcon Icon={ListTodo} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon label="Profile" emoji="👤" focused={focused} />
-          ),
+          title: "Profile",
+          tabBarIcon: ({ focused }) => <TabIcon Icon={User} focused={focused} />,
         }}
       />
     </Tabs>

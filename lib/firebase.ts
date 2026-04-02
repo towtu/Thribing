@@ -1,9 +1,7 @@
 import { initializeApp, getApps } from "firebase/app";
-import {
-  initializeAuth,
-  getReactNativePersistence,
-  getAuth,
-} from "firebase/auth";
+import { initializeAuth, getAuth } from "firebase/auth";
+// @ts-expect-error -- getReactNativePersistence is exported via the "react-native" conditional export in @firebase/auth, which tsc doesn't resolve
+import { getReactNativePersistence } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";

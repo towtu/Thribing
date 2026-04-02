@@ -1,50 +1,176 @@
-# Welcome to your Expo app 👋
+<div align="center">
+  <img src="./assets/images/all-logo.png" alt="ThriBing Logo" width="120" />
+  <h1>ThriBing</h1>
+  <p><strong>A gamified habit & task tracker built with Expo + Firebase</strong></p>
+  <p>Turn your daily goals into an RPG adventure. Level up, earn gold, pick a class, and build streaks — one habit at a time.</p>
+</div>
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+---
 
-## Get started
+## Screenshots
 
-1. Install dependencies
+<div align="center">
+  <table>
+    <tr>
+      <td align="center">
+        <img src="./assets/images/dashboard.png" alt="Dashboard" width="180" /><br/>
+        <sub><b>Home Dashboard</b></sub>
+      </td>
+      <td align="center">
+        <img src="./assets/images/dailiespage.png" alt="Dailies" width="180" /><br/>
+        <sub><b>Dailies</b></sub>
+      </td>
+      <td align="center">
+        <img src="./assets/images/habitspage.png" alt="Habits" width="180" /><br/>
+        <sub><b>Habits</b></sub>
+      </td>
+      <td align="center">
+        <img src="./assets/images/todo-page.png" alt="To-Dos" width="180" /><br/>
+        <sub><b>To-Dos</b></sub>
+      </td>
+      <td align="center">
+        <img src="./assets/images/profilepage.png" alt="Profile" width="180" /><br/>
+        <sub><b>Profile</b></sub>
+      </td>
+    </tr>
+  </table>
+</div>
 
-   ```bash
-   npm install
-   ```
+---
 
-2. Start the app
+## Features
 
-   ```bash
-   npx expo start
-   ```
+### Dailies — Quantity Tracking
+- Set daily goals with targets: *Drink 8 cups of water*, *Run 10 km*, *Study 20 minutes*
+- Tap **+** to log progress, watch the progress bar fill
+- Enable a **countdown timer** for timed goals like studying
+- Set a scheduled time badge (e.g. 7:00 AM)
+- Auto-completes and awards XP + Gold when you hit the target
+- Resets every midnight — missing dailies deals HP damage
 
-In the output, you'll find options to open the app in a
+### Habits — Weekly Goals & Streaks
+- Set how many times per week you want to do something (*Gym 3×/week*)
+- Tap to log each completion — week dots show which days you did it
+- Build **weekly streaks** — hit your goal every week to keep the fire going 🔥
+- Each log earns XP and Gold based on difficulty
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### To-Dos — One-Time Quests
+- One-time tasks that earn XP and Gold on completion
+- Easy / Medium / Hard difficulty for bigger rewards
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### RPG Progression
 
-## Get a fresh project
+| Feature | Details |
+|---------|---------|
+| **HP** | Lose HP when dailies are missed at midnight |
+| **XP** | Earned by completing tasks; fills your level bar |
+| **Gold** | Earned alongside XP; spend it to change class |
+| **Levels** | XP requirements scale each level |
+| **Classes** | Unlock at Level 5: Swordsman, Wizard, Marksman, Healer, Rogue |
 
-When you're ready, run:
+### Classes & Title Progressions
+Pick your class at Level 5 (free). Change later for 50 Gold.
+
+| Level | Swordsman | Wizard | Marksman | Healer | Rogue |
+|-------|-----------|--------|----------|--------|-------|
+| 5 | Squire | Apprentice | Scout | Acolyte | Pickpocket |
+| 10 | Knight | Sorcerer | Sharpshooter | Cleric | Thief |
+| 20 | Crusader | Warlock | Sniper | Priest | Assassin |
+| 35 | Paladin | Archmage | Deadeye | Bishop | Phantom |
+| 50 | Warlord | Grand Wizard | Gunslinger | Saint | Shadow Lord |
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | [Expo](https://expo.dev) (SDK 54) + [Expo Router](https://docs.expo.dev/router/introduction/) |
+| Language | TypeScript |
+| Styling | [NativeWind](https://www.nativewind.dev/) (Tailwind CSS for React Native) |
+| Auth | Firebase Authentication (Email + Google) |
+| Database | Cloud Firestore |
+| State | [Zustand](https://zustand-demo.pmnd.rs/) |
+| Icons | [Lucide React Native](https://lucide.dev/) |
+| Fonts | Nunito (Google Fonts via Expo) |
+
+---
+
+## Getting Started
+
+### Prerequisites
+- Node.js 18+
+- A Firebase project with Authentication and Firestore enabled
+
+### Setup
 
 ```bash
-npm run reset-project
+# Clone the repo
+git clone https://github.com/towtu/Thribing.git
+cd Thribing
+
+# Install dependencies
+npm install
+
+# Copy the example env and fill in your Firebase config
+cp .env.example .env
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Fill in `.env` with your Firebase project credentials:
 
-## Learn more
+```env
+EXPO_PUBLIC_FIREBASE_API_KEY=
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=
+EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+EXPO_PUBLIC_FIREBASE_APP_ID=
+EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+### Run
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+# Start the dev server
+npx expo start
 
-## Join the community
+# Web
+npx expo start --web
+```
 
-Join our community of developers creating universal apps.
+Open on Android by scanning the QR code with the **Expo Go** app.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+---
+
+## Project Structure
+
+```
+app/
+  (app)/
+    (tabs)/          # Bottom tab screens
+      index.tsx      # Home dashboard
+      dailies.tsx    # Daily tasks
+      habits.tsx     # Weekly habits
+      todos.tsx      # One-time to-dos
+      profile.tsx    # Profile & stats
+    choose-class.tsx # Class selection screen
+    tutorial.tsx     # How-to-play guide
+  (auth)/
+    login.tsx        # Login / sign-up
+features/
+  auth/              # Auth services, hooks, components
+  tasks/             # Task CRUD, TaskCard, CreateTaskModal
+  gamification/      # XP/Gold engine, class system
+core_ui/
+  components/        # CartoonCard, CartoonButton, ProgressBar, etc.
+  theme.ts           # Colors, fonts, design tokens
+lib/
+  stores/            # Zustand stores (player, tasks)
+  firebase.ts        # Firebase initialization
+```
+
+---
+
+## License
+
+MIT

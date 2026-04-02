@@ -1,27 +1,43 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useAuthStore } from "@/lib/stores/useAuthStore";
-import { onAuthChange, toAppUser, ensureUserDocument } from "./services";
+import {
+  onAuthChange,
+  toAppUser,
+  ensureUserDocument,
+} from "./services";
 
-/**
- * Subscribes to Firebase onAuthStateChanged and syncs with Zustand store.
- * Also ensures a Firestore user document exists on sign-in.
- * Call this once in the root layout.
- */
 export function useAuthListener() {
-  const setUser = useAuthStore((s) => s.setUser);
-  const setStatus = useAuthStore((s) => s.setStatus);
+  // Guard against re-entrant signOut calls inside onAuthStateChanged
+  const signingOut = useRef(false);
 
   useEffect(() => {
     const unsubscribe = onAuthChange(async (firebaseUser) => {
+      if (signingOut.current) return;
+
       if (firebaseUser) {
-        setUser(toAppUser(firebaseUser));
-        // Create Firestore doc if first time (fire-and-forget, don't block UI)
+        // Google users are always verified; email/password users must verify
+        const isGoogleUser = firebaseUser.providerData.some(
+          (p) => p.providerId === "google.com"
+        );
+
+        if (!isGoogleUser && !firebaseUser.emailVerified) {
+          // Unverified email user — sign them out, but guard against loop
+          signingOut.current = true;
+          try {
+            const { signOutUser } = await import("./services");
+            await signOutUser();
+          } finally {
+            signingOut.current = false;
+          }
+          return;
+        }
+
+        useAuthStore.getState().setUser(toAppUser(firebaseUser));
         ensureUserDocument(firebaseUser).catch(console.error);
       } else {
-        setUser(null);
+        useAuthStore.getState().setUser(null);
       }
     });
-
     return unsubscribe;
-  }, [setUser, setStatus]);
+  }, []);
 }

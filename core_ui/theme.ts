@@ -40,7 +40,6 @@ export const COLORS = {
   border: "#111827", // gray-900
 } as const;
 
-/** Reusable Tailwind class strings for the cartoonish style */
 export const CARTOON_STYLES = {
   card: "border-4 border-gray-900 rounded-3xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]",
   cardSm: "border-2 border-gray-900 rounded-2xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
@@ -49,10 +48,8 @@ export const CARTOON_STYLES = {
   input: "border-4 border-gray-900 rounded-2xl",
 } as const;
 
-/** XP thresholds per level */
 export const XP_PER_LEVEL = 100;
 
-/** Starting player stats */
 export const DEFAULT_PLAYER_STATS = {
   hp: 50,
   max_hp: 50,
@@ -60,4 +57,5 @@ export const DEFAULT_PLAYER_STATS = {
   xp_to_next_level: XP_PER_LEVEL,
   level: 1,
   gold: 0,
+  player_class: "adventurer" as const,
 } as const;

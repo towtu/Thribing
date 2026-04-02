@@ -2,22 +2,19 @@ import {
   GoogleAuthProvider,
   signInWithCredential,
   signInWithPopup,
-  sendSignInLinkToEmail,
-  signInWithEmailLink,
-  isSignInWithEmailLink,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendEmailVerification,
+  updateProfile,
   onAuthStateChanged,
   signOut,
   type User,
   type Unsubscribe,
 } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { Platform } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { auth, db } from "@/lib/firebase";
 import { DEFAULT_PLAYER_STATS } from "@/core_ui/theme";
 import type { AppUser } from "./types";
-
-const EMAIL_STORAGE_KEY = "thribing_email_for_signin";
 
 /**
  * Convert Firebase User to our AppUser type
@@ -31,9 +28,12 @@ export function toAppUser(user: User): AppUser {
   };
 }
 
+// ─── Google Auth ────────────────────────────────────────────────
+
 /**
- * Google Sign-In for Web — uses Firebase popup directly.
- * For native, we use expo-auth-session (handled in the component).
+ * Google Sign-In for Web — uses popup.
+ * The COOP console warning from Expo's dev server is harmless and
+ * does not prevent sign-in from completing.
  */
 export async function signInWithGooglePopup() {
   const provider = new GoogleAuthProvider();
@@ -50,48 +50,67 @@ export async function signInWithGoogleCredential(idToken: string) {
   return result.user;
 }
 
-/**
- * Send a passwordless email sign-in link.
- */
-export async function sendEmailSignInLink(email: string) {
-  const actionCodeSettings = {
-    url: Platform.OS === "web"
-      ? window.location.origin + "/(auth)/login"
-      : "https://thribing.page.link/login",
-    handleCodeInApp: true,
-  };
-
-  await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-
-  // Store email so we can complete sign-in when user clicks the link
-  await AsyncStorage.setItem(EMAIL_STORAGE_KEY, email);
-}
+// ─── Email / Password Auth ──────────────────────────────────────
 
 /**
- * Complete email link sign-in. Call this when the app opens from the email link.
+ * Register a new account with email, password, and display name.
+ * Sends a verification email and signs the user out so they must
+ * verify before accessing the app.
  */
-export async function completeEmailSignIn(emailLink: string) {
-  if (!isSignInWithEmailLink(auth, emailLink)) {
-    throw new Error("Invalid sign-in link");
+export async function registerWithEmail(
+  email: string,
+  password: string,
+  displayName: string
+) {
+  const result = await createUserWithEmailAndPassword(auth, email, password);
+
+  if (displayName.trim()) {
+    await updateProfile(result.user, { displayName: displayName.trim() });
   }
 
-  let email = await AsyncStorage.getItem(EMAIL_STORAGE_KEY);
-  if (!email) {
-    // If email is missing (e.g. different device), caller must prompt for it
-    throw new Error("EMAIL_REQUIRED");
-  }
+  // Send verification email
+  await sendEmailVerification(result.user);
 
-  const result = await signInWithEmailLink(auth, email, emailLink);
-  await AsyncStorage.removeItem(EMAIL_STORAGE_KEY);
+  // Sign out — user must verify email before they can use the app
+  await signOut(auth);
+
   return result.user;
 }
 
 /**
- * Check if a URL is a Firebase email sign-in link.
+ * Sign in an existing user with email and password.
+ * Throws a custom error if the email is not yet verified.
  */
-export function isEmailSignInLink(url: string): boolean {
-  return isSignInWithEmailLink(auth, url);
+export async function loginWithEmail(email: string, password: string) {
+  const result = await signInWithEmailAndPassword(auth, email, password);
+
+  if (!result.user.emailVerified) {
+    // Resend verification email in case they need it again
+    await sendEmailVerification(result.user);
+    // Sign out so the unverified user can't access the app
+    await signOut(auth);
+    const err: any = new Error(
+      "Please verify your email first. A new verification link has been sent."
+    );
+    err.code = "auth/email-not-verified";
+    throw err;
+  }
+
+  return result.user;
 }
+
+/**
+ * Resend the verification email for the currently signed-in user.
+ * Useful if the user is on the "check your email" screen.
+ */
+export async function resendVerificationEmail(email: string, password: string) {
+  // We need to sign in briefly to get a User object for sendEmailVerification
+  const result = await signInWithEmailAndPassword(auth, email, password);
+  await sendEmailVerification(result.user);
+  await signOut(auth);
+}
+
+// ─── Common ─────────────────────────────────────────────────────
 
 /**
  * Sign out the current user.
