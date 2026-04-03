@@ -6,32 +6,20 @@ import {
   CalendarCheck,
   ListTodo,
   User,
+  ShoppingBag,
   type LucideIcon,
 } from "lucide-react-native";
 
 const VIOLET = "#8B5CF6";
 const GRAY = "#6B7280";
 
-function TabIcon({
-  Icon,
-  focused,
-}: {
-  Icon: LucideIcon;
-  focused: boolean;
-}) {
+function TabIcon({ Icon, focused }: { Icon: LucideIcon; focused: boolean }) {
   return (
     <View className="items-center justify-center gap-0.5" style={{ paddingTop: 6 }}>
-      {/* Active indicator pill */}
       {focused && (
-        <View
-          className="absolute -top-2 w-8 h-1 rounded-full bg-violet-electric"
-        />
+        <View className="absolute -top-2 w-8 h-1 rounded-full bg-violet-electric" />
       )}
-      <Icon
-        size={22}
-        color={focused ? VIOLET : GRAY}
-        strokeWidth={focused ? 2.5 : 2}
-      />
+      <Icon size={22} color={focused ? VIOLET : GRAY} strokeWidth={focused ? 2.5 : 2} />
     </View>
   );
 }
@@ -84,6 +72,13 @@ export default function TabsLayout() {
         options={{
           title: "To-Dos",
           tabBarIcon: ({ focused }) => <TabIcon Icon={ListTodo} focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="shop"
+        options={{
+          title: "Shop",
+          tabBarIcon: ({ focused }) => <TabIcon Icon={ShoppingBag} focused={focused} />,
         }}
       />
       <Tabs.Screen
