@@ -23,6 +23,8 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       current.level === stats.level &&
       current.gold === stats.gold &&
       current.player_class === stats.player_class &&
+      current.gold_earned_today === stats.gold_earned_today &&
+      current.gold_reset_date === stats.gold_reset_date &&
       !current.loading
     ) {
       return;
