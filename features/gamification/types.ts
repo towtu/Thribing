@@ -14,6 +14,10 @@ export interface PlayerStats {
   level: number;
   gold: number;
   player_class: PlayerClass;
+  /** Gold earned from tasks today (resets at midnight, capped at 50) */
+  gold_earned_today: number;
+  /** ISO date string (e.g. "2026-04-03") — used to detect day change and reset gold_earned_today */
+  gold_reset_date: string;
 }
 
 export interface XpGain {

@@ -26,6 +26,12 @@ export interface Task {
   has_timer?: boolean;
   /** Display badge — "07:00" means "due at 7 AM" */
   scheduled_time?: string;
+  /** True when scheduled_time passed and daily wasn't completed — requires gold to unlock */
+  locked?: boolean;
+  /** True after HP damage has been dealt for this daily today — prevents double damage */
+  damage_dealt?: boolean;
+  /** IDs of the 3 scheduled local notifications (T-30, T-15, T-5) */
+  notification_ids?: string[];
 
   // ── Habit-specific ───────────────────────────────────────────
   /** How many times per week the habit should be completed */
