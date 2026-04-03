@@ -38,6 +38,9 @@ function docToTask(docSnap: any): Task {
     unit: data.unit,
     has_timer: data.has_timer ?? false,
     scheduled_time: data.scheduled_time ?? null,
+    locked: data.locked ?? false,
+    damage_dealt: data.damage_dealt ?? false,
+    notification_ids: data.notification_ids ?? [],
     // Habit fields
     weekly_target: data.weekly_target,
     weekly_completions: data.weekly_completions ?? [],
@@ -177,7 +180,8 @@ export async function undoHabitCompletion(
 }
 
 /**
- * Reset all daily tasks for a user: set current_count=0 and completed=false.
+ * Reset all daily tasks for a user: set current_count=0, completed=false,
+ * locked=false, damage_dealt=false.
  * Call this when the date changes (midnight rollover).
  */
 export async function resetDailyCounts(userId: string, dailyTaskIds: string[]) {
@@ -185,7 +189,21 @@ export async function resetDailyCounts(userId: string, dailyTaskIds: string[]) {
   const batch = writeBatch(db);
   for (const taskId of dailyTaskIds) {
     const taskDoc = doc(db, "users", userId, "tasks", taskId);
-    batch.update(taskDoc, { current_count: 0, completed: false });
+    batch.update(taskDoc, { current_count: 0, completed: false, locked: false, damage_dealt: false });
   }
   await batch.commit();
+}
+
+/** Gold cost to unlock a locked daily by difficulty */
+export const DAILY_UNLOCK_COSTS: Record<import("./types").Difficulty, number> = {
+  1: 5,
+  2: 10,
+  3: 20,
+};
+
+/**
+ * Unlock a locked daily (gold is deducted by the caller before calling this).
+ */
+export async function unlockDaily(userId: string, taskId: string) {
+  await updateTask(userId, taskId, { locked: false });
 }
