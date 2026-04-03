@@ -40,7 +40,7 @@ function StatBar({
 }
 
 export default function DashboardScreen() {
-  const { hp, max_hp, xp, xp_to_next_level, level, gold, player_class } = usePlayerStore();
+  const { hp, max_hp, xp, xp_to_next_level, level, gold, player_class, gold_earned_today } = usePlayerStore();
   const classInfo = CLASS_INFO[player_class];
   const classTitle = getClassTitle(player_class, level);
   const todaysDailies = useTaskStore((s) => s.todaysDailies);
@@ -112,11 +112,23 @@ export default function DashboardScreen() {
             />
 
             {/* Gold */}
-            <View className="flex-row items-center gap-1.5">
-              <Coins size={14} color="#FACC15" strokeWidth={2.5} />
-              <Text className="text-sm text-yellow-sunburst" style={{ fontFamily: "Nunito_700Bold" }}>
-                {gold} Gold
-              </Text>
+            <View className="gap-1">
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center gap-1.5">
+                  <Coins size={14} color="#FACC15" strokeWidth={2.5} />
+                  <Text className="text-sm text-yellow-sunburst" style={{ fontFamily: "Nunito_700Bold" }}>
+                    {gold} Gold
+                  </Text>
+                </View>
+                <Text className="text-xs text-gray-400" style={{ fontFamily: "Nunito_600SemiBold" }}>
+                  {gold_earned_today}/50 today
+                </Text>
+              </View>
+              {gold_earned_today >= 50 && (
+                <Text className="text-xs text-yellow-400 text-right" style={{ fontFamily: "Nunito_600SemiBold" }}>
+                  Daily gold cap reached — XP still earned!
+                </Text>
+              )}
             </View>
           </View>
         </CartoonCard>
