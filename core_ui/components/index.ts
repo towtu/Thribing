@@ -6,3 +6,4 @@ export { ProgressBar } from "./ProgressBar";
 export { CounterControl } from "./CounterControl";
 export { TimerDisplay } from "./TimerDisplay";
 export { WeekDots } from "./WeekDots";
+export { ConfirmModal } from "./ConfirmModal";

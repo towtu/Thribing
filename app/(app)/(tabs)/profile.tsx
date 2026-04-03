@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { View, Text, Alert, Pressable, Platform } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { User, Shield, Star, Coins, BookOpen, ChevronRight, Flame, Swords } from "lucide-react-native";
 import { CLASS_INFO, CLASS_CHANGE_COST, getClassTitle } from "@/features/gamification/types";
-import { ScreenContainer, CartoonCard, CartoonButton } from "@/core_ui/components";
+import { ScreenContainer, CartoonCard, CartoonButton, ConfirmModal } from "@/core_ui/components";
 import { useAuthStore } from "@/lib/stores/useAuthStore";
 import { usePlayerStore } from "@/lib/stores/usePlayerStore";
 import { useTaskStore } from "@/lib/stores/useTaskStore";
@@ -32,6 +32,7 @@ export default function ProfileScreen() {
   const tasks = useTaskStore((s) => s.tasks);
   const habits = useTaskStore((s) => s.habits);
   const [signingOut, setSigningOut] = useState(false);
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
 
   const playerClass = usePlayerStore((s) => s.player_class);
   const levelTitle = getClassTitle(playerClass, level);
@@ -42,30 +43,13 @@ export default function ProfileScreen() {
   const totalHabits = habits.length;
   const totalStreaks = habits.reduce((sum, h) => sum + (h.streak ?? 0), 0);
 
-  const handleSignOut = () => {
-    const doSignOut = async () => {
-      setSigningOut(true);
-      try {
-        await signOutUser();
-      } catch {
-        setSigningOut(false);
-      }
-    };
-
-    if (Platform.OS === "web") {
-      // Alert.alert is native-only; use browser confirm on web
-      if (window.confirm("Are you sure you want to sign out?")) {
-        doSignOut();
-      }
-    } else {
-      Alert.alert(
-        "Sign Out",
-        "Are you sure you want to sign out?",
-        [
-          { text: "Cancel", style: "cancel" },
-          { text: "Sign Out", style: "destructive", onPress: doSignOut },
-        ]
-      );
+  const doSignOut = async () => {
+    setShowSignOutModal(false);
+    setSigningOut(true);
+    try {
+      await signOutUser();
+    } catch {
+      setSigningOut(false);
     }
   };
 
@@ -255,11 +239,23 @@ export default function ProfileScreen() {
             title={signingOut ? "Signing out..." : "Sign Out"}
             variant="pink"
             size="md"
-            onPress={handleSignOut}
+            onPress={() => setShowSignOutModal(true)}
             disabled={signingOut}
           />
         </View>
       </View>
+
+      <ConfirmModal
+        visible={showSignOutModal}
+        emoji="🚪"
+        title="Sign Out?"
+        message="You'll need to log back in to access your adventure. Your progress is safely saved."
+        confirmLabel="Sign Out"
+        cancelLabel="Stay"
+        confirmVariant="pink"
+        onConfirm={doSignOut}
+        onCancel={() => setShowSignOutModal(false)}
+      />
     </ScreenContainer>
   );
 }
