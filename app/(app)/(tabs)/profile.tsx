@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, Alert, Pressable } from "react-native";
+import { View, Text, Alert, Pressable, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { User, Shield, Star, Coins, BookOpen, ChevronRight, Flame, Swords } from "lucide-react-native";
 import { CLASS_INFO, CLASS_CHANGE_COST, getClassTitle } from "@/features/gamification/types";
@@ -43,25 +43,30 @@ export default function ProfileScreen() {
   const totalStreaks = habits.reduce((sum, h) => sum + (h.streak ?? 0), 0);
 
   const handleSignOut = () => {
-    Alert.alert(
-      "Sign Out",
-      "Are you sure you want to sign out?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Sign Out",
-          style: "destructive",
-          onPress: async () => {
-            setSigningOut(true);
-            try {
-              await signOutUser();
-            } catch {
-              setSigningOut(false);
-            }
-          },
-        },
-      ]
-    );
+    const doSignOut = async () => {
+      setSigningOut(true);
+      try {
+        await signOutUser();
+      } catch {
+        setSigningOut(false);
+      }
+    };
+
+    if (Platform.OS === "web") {
+      // Alert.alert is native-only; use browser confirm on web
+      if (window.confirm("Are you sure you want to sign out?")) {
+        doSignOut();
+      }
+    } else {
+      Alert.alert(
+        "Sign Out",
+        "Are you sure you want to sign out?",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Sign Out", style: "destructive", onPress: doSignOut },
+        ]
+      );
+    }
   };
 
   return (
