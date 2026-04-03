@@ -1,17 +1,58 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Stack, Redirect, useRouter } from "expo-router";
 import { useAuthStore } from "@/lib/stores/useAuthStore";
 import { usePlayerStore } from "@/lib/stores/usePlayerStore";
-import { useTaskSubscription, usePlayerSubscription } from "@/features/tasks/hooks";
+import { useTaskStore } from "@/lib/stores/useTaskStore";
+import {
+  useTaskSubscription,
+  usePlayerSubscription,
+  useDamageCheck,
+  useGoldResetCheck,
+} from "@/features/tasks/hooks";
+import { DeathModal } from "@/features/gamification/components/DeathModal";
+import { rescheduleAllDailies } from "@/features/notifications/service";
+import { updateTask } from "@/features/tasks/services";
 
 export default function AppLayout() {
   const status = useAuthStore((s) => s.status);
   const router = useRouter();
+  const uid = useAuthStore((s) => s.user?.uid);
 
   useTaskSubscription();
   usePlayerSubscription();
+  useGoldResetCheck();
 
-  // Watch for level 5 unlock: if player hits level 5+ and is still "adventurer", push class selection
+  const [deathInfo, setDeathInfo] = useState<{
+    levelsLost: number;
+    goldLost: number;
+  } | null>(null);
+
+  const handleDeath = useCallback(
+    (info: { levelsLost: number; goldLost: number }) => {
+      setDeathInfo(info);
+    },
+    []
+  );
+
+  useDamageCheck(handleDeath);
+
+  // Reschedule all notifications on app open (handles reinstalls/permission changes)
+  useEffect(() => {
+    if (!uid) return;
+    const dailies = useTaskStore.getState().dailies;
+    if (dailies.length === 0) return;
+    rescheduleAllDailies(dailies).then(async (result) => {
+      for (const [taskId, ids] of Object.entries(result)) {
+        try {
+          await updateTask(uid, taskId, { notification_ids: ids });
+        } catch (e) {
+          console.error("Failed to save notification_ids:", e);
+        }
+      }
+    });
+  }, [uid]);
+
+  // Watch for level 5 unlock: push class selection
   const level = usePlayerStore((s) => s.level);
   const playerClass = usePlayerStore((s) => s.player_class);
   const loading = usePlayerStore((s) => s.loading);
@@ -21,7 +62,6 @@ export default function AppLayout() {
     if (loading || hasPromptedRef.current) return;
     if (level >= 5 && playerClass === "adventurer") {
       hasPromptedRef.current = true;
-      // Small delay so the router is ready
       setTimeout(() => {
         router.push("/choose-class" as any);
       }, 500);
@@ -33,11 +73,19 @@ export default function AppLayout() {
   }
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: "#1A1A2E" },
-      }}
-    />
+    <>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: "#1A1A2E" },
+        }}
+      />
+      <DeathModal
+        visible={deathInfo !== null}
+        levelsLost={deathInfo?.levelsLost ?? 0}
+        goldLost={deathInfo?.goldLost ?? 0}
+        onDismiss={() => setDeathInfo(null)}
+      />
+    </>
   );
 }
