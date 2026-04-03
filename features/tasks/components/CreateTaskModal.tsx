@@ -13,7 +13,8 @@ import {
 import { X, Clock, ChevronDown } from "lucide-react-native";
 import { CartoonButton, CartoonCard, CartoonInput } from "@/core_ui/components";
 import { useAuthStore } from "@/lib/stores/useAuthStore";
-import { createTask } from "../services";
+import { createTask, updateTask } from "../services";
+import { scheduleNotificationsForDaily } from "@/features/notifications/service";
 import type { TaskType, Difficulty } from "../types";
 
 interface CreateTaskModalProps {
@@ -91,7 +92,7 @@ export function CreateTaskModal({ visible, onClose, defaultType }: CreateTaskMod
     try {
       const finalUnit = unit === "custom" ? customUnit.trim() || "times" : unit;
 
-      await createTask(user.uid, {
+      const taskId = await createTask(user.uid, {
         type: defaultType,
         title,
         notes,
@@ -109,6 +110,19 @@ export function CreateTaskModal({ visible, onClose, defaultType }: CreateTaskMod
           weekly_target: parsedWeekly,
         }),
       });
+
+      // Schedule notifications for the new daily if it has a scheduled time
+      if (defaultType === "daily" && scheduledTime.trim()) {
+        const ids = await scheduleNotificationsForDaily(
+          title,
+          scheduledTime.trim(),
+          scheduledDays
+        );
+        if (ids.length > 0) {
+          await updateTask(user.uid, taskId, { notification_ids: ids });
+        }
+      }
+
       resetForm();
       onClose();
     } catch (err: any) {
