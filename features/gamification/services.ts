@@ -13,7 +13,6 @@ export function subscribeToPlayerStats(
   callback: (stats: PlayerStats) => void
 ): Unsubscribe {
   const userRef = doc(db, "users", userId);
-
   return onSnapshot(userRef, (snapshot) => {
     if (snapshot.exists()) {
       const data = snapshot.data();
@@ -25,6 +24,8 @@ export function subscribeToPlayerStats(
         level: data.level ?? DEFAULT_PLAYER_STATS.level,
         gold: data.gold ?? DEFAULT_PLAYER_STATS.gold,
         player_class: data.player_class ?? "adventurer",
+        gold_earned_today: data.gold_earned_today ?? 0,
+        gold_reset_date: data.gold_reset_date ?? "",
       });
     } else {
       callback({ ...DEFAULT_PLAYER_STATS });
@@ -40,9 +41,6 @@ export async function updatePlayerStats(
   await updateDoc(userRef, stats as any);
 }
 
-/**
- * Change the player's class. Deducts gold if not free.
- */
 export async function changePlayerClass(
   userId: string,
   newClass: PlayerClass,
@@ -56,4 +54,34 @@ export async function changePlayerClass(
     player_class: newClass,
     gold: currentGold - cost,
   });
+}
+
+// ─── Shop / Potions ───────────────────────────────────────────────────────────
+
+export const POTIONS = [
+  { id: "small" as const,  name: "Small Potion",  hp: 20,  cost: 10, emoji: "🧪" },
+  { id: "medium" as const, name: "Medium Potion", hp: 50,  cost: 25, emoji: "⚗️" },
+  { id: "large" as const,  name: "Large Potion",  hp: 100, cost: 50, emoji: "🔮" },
+];
+
+export type PotionId = "small" | "medium" | "large";
+
+/**
+ * Buy a potion: deduct gold, restore HP (capped at max_hp).
+ * Returns updated { hp, gold } values.
+ */
+export async function buyPotion(
+  userId: string,
+  potionId: PotionId,
+  currentStats: PlayerStats
+): Promise<{ newHp: number; newGold: number }> {
+  const potion = POTIONS.find((p) => p.id === potionId);
+  if (!potion) throw new Error("Invalid potion");
+  if (currentStats.gold < potion.cost) throw new Error("Not enough gold");
+
+  const newHp = Math.min(currentStats.max_hp, currentStats.hp + potion.hp);
+  const newGold = currentStats.gold - potion.cost;
+
+  await updatePlayerStats(userId, { hp: newHp, gold: newGold });
+  return { newHp, newGold };
 }
