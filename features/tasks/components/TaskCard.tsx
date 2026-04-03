@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { View, Text, Pressable } from "react-native";
-import { Trash2, Check, Flame } from "lucide-react-native";
+import { Trash2, Check, Flame, Lock } from "lucide-react-native";
 import { CartoonCard } from "@/core_ui/components";
 import { ProgressBar } from "@/core_ui/components/ProgressBar";
 import { CounterControl } from "@/core_ui/components/CounterControl";
@@ -16,11 +16,14 @@ import {
   undoHabitCompletion,
   toggleTaskComplete,
   updateTask,
+  unlockDaily,
+  DAILY_UNLOCK_COSTS,
 } from "../services";
 import { updatePlayerStats } from "@/features/gamification/services";
 import {
   processTaskCompletion,
   undoTaskCompletion,
+  DAILY_GOLD_CAP,
 } from "@/features/gamification/engine";
 import { useTimer } from "../hooks/useTimer";
 import type { Task } from "../types";
@@ -51,9 +54,17 @@ function DailyCard({ task }: { task: Task }) {
     if (!user?.uid) return;
     const currentStats = usePlayerStore.getState();
     const newStats = processTaskCompletion(task.difficulty, currentStats);
-    const xpGain = newStats.xp - currentStats.xp + (newStats.level > currentStats.level ? currentStats.xp_to_next_level - currentStats.xp : 0);
+    const xpGain =
+      newStats.xp -
+      currentStats.xp +
+      (newStats.level > currentStats.level
+        ? currentStats.xp_to_next_level - currentStats.xp
+        : 0);
     const goldGain = newStats.gold - currentStats.gold;
-    setShowReward(`+${xpGain} XP  +${goldGain} 🪙`);
+    const capReached = newStats.gold_earned_today >= DAILY_GOLD_CAP;
+    setShowReward(
+      `+${xpGain} XP${goldGain > 0 ? `  +${goldGain} 🪙` : ""}${capReached && goldGain === 0 ? " (cap)" : ""}`
+    );
     setTimeout(() => setShowReward(null), 2000);
     await updatePlayerStats(user.uid, {
       hp: newStats.hp,
@@ -62,11 +73,12 @@ function DailyCard({ task }: { task: Task }) {
       xp_to_next_level: newStats.xp_to_next_level,
       level: newStats.level,
       gold: newStats.gold,
+      gold_earned_today: newStats.gold_earned_today,
     });
   };
 
   const handleIncrement = async () => {
-    if (!user?.uid || busy || task.completed) return;
+    if (!user?.uid || busy || task.completed || task.locked) return;
     setBusy(true);
     try {
       const newCount = Math.min(currentCount + 1, targetCount);
@@ -109,7 +121,6 @@ function DailyCard({ task }: { task: Task }) {
     }
   };
 
-  // For timer: when minute ticks, update count
   const handleTimerTick = async () => {
     if (!user?.uid || task.completed) return;
     const elapsedMins = timer.elapsedMinutes;
@@ -124,9 +135,8 @@ function DailyCard({ task }: { task: Task }) {
     }
   };
 
-  // Simple toggle (no quantity)
   const handleSimpleToggle = async () => {
-    if (!user?.uid || busy) return;
+    if (!user?.uid || busy || task.locked) return;
     setBusy(true);
     try {
       const newCompleted = !task.completed;
@@ -153,6 +163,29 @@ function DailyCard({ task }: { task: Task }) {
     }
   };
 
+  const handleUnlock = async () => {
+    if (!user?.uid || busy) return;
+    const cost = DAILY_UNLOCK_COSTS[task.difficulty];
+    const currentStats = usePlayerStore.getState();
+    if (currentStats.gold < cost) {
+      setShowReward("Not enough gold!");
+      setTimeout(() => setShowReward(null), 2000);
+      return;
+    }
+    setBusy(true);
+    try {
+      const newGold = currentStats.gold - cost;
+      usePlayerStore.getState().setStats({ ...currentStats, gold: newGold, loading: false });
+      storeUpdateTask(task.id, { locked: false });
+      await updatePlayerStats(user.uid, { gold: newGold });
+      await unlockDaily(user.uid, task.id);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!user?.uid || busy) return;
     setBusy(true);
@@ -168,22 +201,35 @@ function DailyCard({ task }: { task: Task }) {
   return (
     <CartoonCard
       variant="default"
-      className={task.completed ? "opacity-60" : ""}
+      className={`${task.completed ? "opacity-60" : ""} ${task.locked ? "border-red-500" : ""}`}
     >
       <View className="gap-3">
         {/* Header row */}
         <View className="flex-row items-start">
-          {/* Checkbox (no-quantity mode) */}
+          {/* Checkbox or locked unlock button (no-quantity mode) */}
           {!hasQuantity && (
-            <Pressable
-              onPress={handleSimpleToggle}
-              disabled={busy}
-              className={`w-9 h-9 border-4 border-gray-900 rounded-xl items-center justify-center active:scale-95 mr-3 flex-shrink-0 mt-0.5 ${
-                task.completed ? "bg-green-500" : "bg-white"
-              }`}
-            >
-              {task.completed && <Check size={16} color="white" strokeWidth={3} />}
-            </Pressable>
+            task.locked ? (
+              <Pressable
+                onPress={handleUnlock}
+                disabled={busy}
+                className="h-9 bg-yellow-sunburst border-4 border-gray-900 rounded-xl items-center justify-center active:scale-95 mr-3 flex-shrink-0 mt-0.5 flex-row gap-1 px-2"
+              >
+                <Lock size={12} color="#111827" strokeWidth={3} />
+                <Text className="text-xs text-gray-900" style={{ fontFamily: "Nunito_800ExtraBold" }}>
+                  {DAILY_UNLOCK_COSTS[task.difficulty]}🪙
+                </Text>
+              </Pressable>
+            ) : (
+              <Pressable
+                onPress={handleSimpleToggle}
+                disabled={busy}
+                className={`w-9 h-9 border-4 border-gray-900 rounded-xl items-center justify-center active:scale-95 mr-3 flex-shrink-0 mt-0.5 ${
+                  task.completed ? "bg-green-500" : "bg-white"
+                }`}
+              >
+                {task.completed && <Check size={16} color="white" strokeWidth={3} />}
+              </Pressable>
+            )
           )}
 
           <View className="flex-1 gap-0.5">
@@ -201,12 +247,12 @@ function DailyCard({ task }: { task: Task }) {
                 Daily • {DIFFICULTY_LABELS[task.difficulty]}
               </Text>
               {task.scheduled_time && (
-                <View className="bg-violet-100 border border-violet-300 rounded-full px-2">
+                <View className={`border rounded-full px-2 ${task.locked ? "bg-red-100 border-red-400" : "bg-violet-100 border-violet-300"}`}>
                   <Text
-                    className="text-xs text-violet-700"
+                    className={`text-xs ${task.locked ? "text-red-700" : "text-violet-700"}`}
                     style={{ fontFamily: "Nunito_700Bold" }}
                   >
-                    {task.scheduled_time}
+                    {task.locked ? "🔒 " : ""}{task.scheduled_time}
                   </Text>
                 </View>
               )}
@@ -238,7 +284,7 @@ function DailyCard({ task }: { task: Task }) {
               unit={unit}
               color="cyan"
             />
-            {!task.completed && (
+            {!task.completed && !task.locked && (
               <CounterControl
                 count={currentCount}
                 total={targetCount}
@@ -248,22 +294,29 @@ function DailyCard({ task }: { task: Task }) {
                 disabled={busy}
               />
             )}
+            {task.locked && (
+              <Pressable
+                onPress={handleUnlock}
+                disabled={busy}
+                className="flex-row items-center justify-center gap-1 h-9 bg-yellow-sunburst border-4 border-gray-900 rounded-xl active:scale-95"
+              >
+                <Lock size={12} color="#111827" strokeWidth={3} />
+                <Text className="text-xs text-gray-900" style={{ fontFamily: "Nunito_800ExtraBold" }}>
+                  Unlock for {DAILY_UNLOCK_COSTS[task.difficulty]}🪙
+                </Text>
+              </Pressable>
+            )}
           </View>
         )}
 
         {/* Timer section */}
-        {hasQuantity && task.has_timer && (
+        {hasQuantity && task.has_timer && !task.locked && (
           <TimerDisplay
             elapsed={timer.elapsed}
             targetSeconds={targetSeconds}
             isRunning={timer.isRunning}
-            onStart={() => {
-              timer.start();
-            }}
-            onPause={() => {
-              timer.pause();
-              handleTimerTick();
-            }}
+            onStart={() => { timer.start(); }}
+            onPause={() => { timer.pause(); handleTimerTick(); }}
             onReset={() => {
               timer.reset();
               storeUpdateTask(task.id, { current_count: 0, completed: false });
@@ -273,6 +326,18 @@ function DailyCard({ task }: { task: Task }) {
             }}
             disabled={task.completed}
           />
+        )}
+        {hasQuantity && task.has_timer && task.locked && (
+          <Pressable
+            onPress={handleUnlock}
+            disabled={busy}
+            className="flex-row items-center justify-center gap-1 h-9 bg-yellow-sunburst border-4 border-gray-900 rounded-xl active:scale-95"
+          >
+            <Lock size={12} color="#111827" strokeWidth={3} />
+            <Text className="text-xs text-gray-900" style={{ fontFamily: "Nunito_800ExtraBold" }}>
+              Unlock for {DAILY_UNLOCK_COSTS[task.difficulty]}🪙
+            </Text>
+          </Pressable>
         )}
       </View>
     </CartoonCard>
@@ -299,11 +364,9 @@ function HabitCard({ task }: { task: Task }) {
     setBusy(true);
     try {
       if (loggedToday) {
-        // Undo today's log
         const newCompletions = weeklyCompletions.filter((d) => d !== today);
         storeUpdateTask(task.id, { weekly_completions: newCompletions });
         await undoHabitCompletion(user.uid, task.id, weeklyCompletions);
-        // Undo XP/gold
         const currentStats = usePlayerStore.getState();
         const newStats = undoTaskCompletion(task.difficulty, currentStats);
         await updatePlayerStats(user.uid, {
@@ -315,16 +378,19 @@ function HabitCard({ task }: { task: Task }) {
           level: newStats.level,
         });
       } else {
-        // Log today
         const newCompletions = [...weeklyCompletions, today];
         storeUpdateTask(task.id, { weekly_completions: newCompletions });
         await logHabitCompletion(user.uid, task.id, weeklyCompletions);
-        // Award XP/gold
         const currentStats = usePlayerStore.getState();
         const newStats = processTaskCompletion(task.difficulty, currentStats);
-        const xpGain = newStats.xp - currentStats.xp + (newStats.level > currentStats.level ? currentStats.xp_to_next_level - currentStats.xp : 0);
+        const xpGain =
+          newStats.xp -
+          currentStats.xp +
+          (newStats.level > currentStats.level
+            ? currentStats.xp_to_next_level - currentStats.xp
+            : 0);
         const goldGain = newStats.gold - currentStats.gold;
-        setShowReward(`+${xpGain} XP  +${goldGain} 🪙`);
+        setShowReward(`+${xpGain} XP${goldGain > 0 ? `  +${goldGain} 🪙` : ""}`);
         setTimeout(() => setShowReward(null), 2000);
         await updatePlayerStats(user.uid, {
           hp: newStats.hp,
@@ -333,6 +399,7 @@ function HabitCard({ task }: { task: Task }) {
           xp_to_next_level: newStats.xp_to_next_level,
           level: newStats.level,
           gold: newStats.gold,
+          gold_earned_today: newStats.gold_earned_today,
         });
       }
     } catch (e) {
@@ -357,9 +424,7 @@ function HabitCard({ task }: { task: Task }) {
   return (
     <CartoonCard variant="default">
       <View className="gap-3">
-        {/* Header row */}
         <View className="flex-row items-center">
-          {/* Log button */}
           <Pressable
             onPress={handleLog}
             disabled={busy}
@@ -385,7 +450,6 @@ function HabitCard({ task }: { task: Task }) {
             </Text>
           </View>
 
-          {/* Streak badge */}
           {streak > 0 && (
             <View className="flex-row items-center gap-1 bg-yellow-sunburst border-2 border-gray-900 rounded-full px-2 py-0.5 mr-2">
               <Flame size={12} color="#111827" strokeWidth={2.5} />
@@ -398,7 +462,6 @@ function HabitCard({ task }: { task: Task }) {
             </View>
           )}
 
-          {/* Reward flash */}
           {showReward && (
             <Text
               className="text-xs text-green-600 font-bold mr-1"
@@ -408,13 +471,11 @@ function HabitCard({ task }: { task: Task }) {
             </Text>
           )}
 
-          {/* Delete */}
           <Pressable onPress={handleDelete} disabled={busy} className="p-1">
             <Trash2 size={16} color="#9CA3AF" strokeWidth={2} />
           </Pressable>
         </View>
 
-        {/* Weekly progress bar */}
         <View className="gap-1">
           <View className="h-2 bg-gray-200 rounded-full border-2 border-gray-900 overflow-hidden">
             <View
@@ -424,12 +485,9 @@ function HabitCard({ task }: { task: Task }) {
               }}
             />
           </View>
-
-          {/* Week dots */}
           <WeekDots completions={weeklyCompletions} />
         </View>
 
-        {/* Logged-today state */}
         {loggedToday && (
           <Text
             className="text-xs text-violet-600 text-center"
@@ -461,9 +519,14 @@ function TodoCard({ task }: { task: Task }) {
       if (newCompleted) {
         const currentStats = usePlayerStore.getState();
         const newStats = processTaskCompletion(task.difficulty, currentStats);
-        const xpGain = newStats.xp - currentStats.xp + (newStats.level > currentStats.level ? currentStats.xp_to_next_level - currentStats.xp : 0);
+        const xpGain =
+          newStats.xp -
+          currentStats.xp +
+          (newStats.level > currentStats.level
+            ? currentStats.xp_to_next_level - currentStats.xp
+            : 0);
         const goldGain = newStats.gold - currentStats.gold;
-        setShowReward(`+${xpGain} XP  +${goldGain} 🪙`);
+        setShowReward(`+${xpGain} XP${goldGain > 0 ? `  +${goldGain} 🪙` : ""}`);
         setTimeout(() => setShowReward(null), 2000);
         await updatePlayerStats(user.uid, {
           hp: newStats.hp,
@@ -472,6 +535,7 @@ function TodoCard({ task }: { task: Task }) {
           xp_to_next_level: newStats.xp_to_next_level,
           level: newStats.level,
           gold: newStats.gold,
+          gold_earned_today: newStats.gold_earned_today,
         });
       } else {
         const currentStats = usePlayerStore.getState();
