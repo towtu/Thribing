@@ -175,7 +175,7 @@ function DailyCard({ task }: { task: Task }) {
     setBusy(true);
     try {
       const newGold = currentStats.gold - cost;
-      usePlayerStore.getState().setStats({ ...currentStats, gold: newGold, loading: false });
+      usePlayerStore.getState().setStats({ ...currentStats, gold: newGold });
       storeUpdateTask(task.id, { locked: false });
       await updatePlayerStats(user.uid, { gold: newGold });
       await unlockDaily(user.uid, task.id);

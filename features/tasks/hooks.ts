@@ -6,6 +6,7 @@ import { usePlayerStore } from "@/lib/stores/usePlayerStore";
 import { subscribeToTasks, updateTask } from "./services";
 import { subscribeToPlayerStats, updatePlayerStats } from "@/features/gamification/services";
 import { calculateDamage, processHpDeath } from "@/features/gamification/engine";
+import type { PlayerStats } from "@/features/gamification/types";
 
 export function useTaskSubscription() {
   const uid = useAuthStore((s) => s.user?.uid);
@@ -73,7 +74,7 @@ export function useDamageCheck(
       newHp = Math.max(0, newHp - calculateDamage(daily.difficulty));
     }
 
-    let newStats = { ...stats, hp: newHp };
+    let newStats: PlayerStats = { ...stats, hp: newHp };
     let deathInfo: { levelsLost: number; goldLost: number } | null = null;
 
     if (newHp <= 0) {
@@ -83,7 +84,7 @@ export function useDamageCheck(
     }
 
     // Update local store
-    usePlayerStore.getState().setStats({ ...newStats, loading: false });
+    usePlayerStore.getState().setStats(newStats);
 
     // Write to Firestore (queued offline automatically by Firebase SDK)
     try {
@@ -143,7 +144,8 @@ export function useGoldResetCheck() {
     if (stats.gold_reset_date === today) return;
 
     const updates = { gold_earned_today: 0, gold_reset_date: today };
-    usePlayerStore.getState().setStats({ ...stats, ...updates, loading: false });
+    const resetStats: PlayerStats = { ...stats, ...updates };
+    usePlayerStore.getState().setStats(resetStats);
     updatePlayerStats(uid, updates).catch(console.error);
   }, [uid]);
 }

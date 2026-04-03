@@ -19,7 +19,7 @@ export default function ShopScreen() {
       const potion = POTIONS.find((p) => p.id === potionId)!;
       const { newHp, newGold } = await buyPotion(user.uid, potionId, stats);
       const restored = newHp - stats.hp;
-      usePlayerStore.getState().setStats({ ...stats, hp: newHp, gold: newGold, loading: false });
+      usePlayerStore.getState().setStats({ ...stats, hp: newHp, gold: newGold });
       setFlash(`${potion.emoji} +${restored} HP restored!`);
       setTimeout(() => setFlash(null), 2500);
     } catch (e: any) {
