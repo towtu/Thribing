@@ -2,7 +2,11 @@ import { initializeApp, getApps } from "firebase/app";
 import { initializeAuth, getAuth } from "firebase/auth";
 // @ts-expect-error -- getReactNativePersistence is exported via the "react-native" conditional export in @firebase/auth, which tsc doesn't resolve
 import { getReactNativePersistence } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 
@@ -28,6 +32,14 @@ export const auth =
         persistence: getReactNativePersistence(AsyncStorage),
       });
 
-export const db = getFirestore(app);
+// Enable offline persistence:
+// - Native: persistentLocalCache (SQLite-backed, survives app close)
+// - Web: persistentLocalCache with multi-tab support (IndexedDB)
+export const db = initializeFirestore(app, {
+  localCache:
+    Platform.OS === "web"
+      ? persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+      : persistentLocalCache(),
+});
 
 export default app;
