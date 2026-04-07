@@ -30,7 +30,8 @@ interface GroupHabitCardProps {
 export function GroupHabitCard({ group }: GroupHabitCardProps) {
   const user = useAuthStore((s) => s.user);
   const playerStats = usePlayerStore();
-  const groupMembers = useGroupStore((s) => s.groupMembers[group.id] ?? []);
+  const rawMembers = useGroupStore((s) => s.groupMembers[group.id]);
+  const groupMembers = rawMembers ?? [];
   const [expanded, setExpanded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [showReward, setShowReward] = useState<string | null>(null);
