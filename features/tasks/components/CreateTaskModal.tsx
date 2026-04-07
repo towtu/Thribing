@@ -10,6 +10,7 @@ import {
   Switch,
   TextInput,
 } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { X, Clock, ChevronDown } from "lucide-react-native";
 import { CartoonButton, CartoonCard, CartoonInput } from "@/core_ui/components";
 import { useAuthStore } from "@/lib/stores/useAuthStore";
@@ -32,14 +33,6 @@ const DIFFICULTY_OPTIONS: { value: Difficulty; label: string; color: string }[] 
 const UNIT_PRESETS = ["cups", "km", "times", "minutes", "pages", "reps"];
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-function isValidTime(str: string): boolean {
-  if (!str.trim()) return true;
-  const match = str.trim().match(/^(\d{1,2}):(\d{2})$/);
-  if (!match) return false;
-  const h = parseInt(match[1], 10);
-  const m = parseInt(match[2], 10);
-  return h >= 0 && h <= 23 && m >= 0 && m <= 59;
-}
 
 const LABEL_STYLE = { fontFamily: "Nunito_700Bold" };
 const HEADING_STYLE = { fontFamily: "Nunito_800ExtraBold" };
@@ -60,7 +53,8 @@ export function CreateTaskModal({ visible, onClose, defaultType }: CreateTaskMod
   const [unit, setUnit] = useState("times");
   const [customUnit, setCustomUnit] = useState("");
   const [hasTimer, setHasTimer] = useState(false);
-  const [scheduledTime, setScheduledTime] = useState("");
+  const [scheduledTime, setScheduledTime] = useState<Date | null>(null);
+  const [showTimePicker, setShowTimePicker] = useState(false);
 
   // Habit-specific
   const [weeklyTarget, setWeeklyTarget] = useState("3");
@@ -79,7 +73,8 @@ export function CreateTaskModal({ visible, onClose, defaultType }: CreateTaskMod
     setUnit("times");
     setCustomUnit("");
     setHasTimer(false);
-    setScheduledTime("");
+    setScheduledTime(null);
+    setShowTimePicker(false);
     setWeeklyTarget("3");
     setTrackSession(false);
     setSessionTarget("");
@@ -105,13 +100,13 @@ export function CreateTaskModal({ visible, onClose, defaultType }: CreateTaskMod
       return;
     }
 
-    if (defaultType === "daily" && scheduledTime.trim() && !isValidTime(scheduledTime)) {
-      setError("Time must be in HH:MM format (e.g. 07:00 or 19:30)");
-      return;
-    }
-
     setSaving(true);
     setError("");
+
+    // Format Date → "HH:MM" for storage
+    const timeString = scheduledTime
+      ? `${String(scheduledTime.getHours()).padStart(2, "0")}:${String(scheduledTime.getMinutes()).padStart(2, "0")}`
+      : undefined;
 
     try {
       const finalUnit = unit === "custom" ? customUnit.trim() || "times" : unit;
@@ -127,7 +122,7 @@ export function CreateTaskModal({ visible, onClose, defaultType }: CreateTaskMod
           target_count: targetCount ? parsedTarget : undefined,
           unit: targetCount ? finalUnit : undefined,
           has_timer: targetCount && finalUnit === "minutes" ? hasTimer : false,
-          scheduled_time: scheduledTime.trim() || undefined,
+          scheduled_time: timeString,
         }),
         // Habit
         ...(defaultType === "habit" && {
@@ -141,10 +136,10 @@ export function CreateTaskModal({ visible, onClose, defaultType }: CreateTaskMod
       });
 
       // Schedule notifications for the new daily if it has a scheduled time
-      if (defaultType === "daily" && scheduledTime.trim()) {
+      if (defaultType === "daily" && timeString) {
         const ids = await scheduleNotificationsForDaily(
           title,
-          scheduledTime.trim(),
+          timeString,
           scheduledDays
         );
         if (ids.length > 0) {
@@ -326,15 +321,93 @@ export function CreateTaskModal({ visible, onClose, defaultType }: CreateTaskMod
                   {/* Scheduled time */}
                   <View className="gap-2 mb-4">
                     <Text className="text-sm text-gray-300" style={LABEL_STYLE}>
-                      Scheduled time <Text className="text-gray-500 font-normal">(optional, e.g. 07:00)</Text>
+                      Scheduled time <Text className="text-gray-500 font-normal">(optional)</Text>
                     </Text>
-                    <CartoonInput
-                      variant="dark"
-                      placeholder="07:00"
-                      value={scheduledTime}
-                      onChangeText={setScheduledTime}
-                      keyboardType="numbers-and-punctuation"
-                    />
+                    <View className="flex-row items-center gap-2">
+                      <Pressable
+                        onPress={() => setShowTimePicker(true)}
+                        className="flex-1 flex-row items-center gap-2 bg-dark-card border-2 border-gray-700 rounded-xl px-4 py-3 active:opacity-70"
+                      >
+                        <Clock size={16} color="#9CA3AF" strokeWidth={2} />
+                        <Text className="text-sm text-gray-300 flex-1" style={LABEL_STYLE}>
+                          {scheduledTime
+                            ? scheduledTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                            : "No reminder set"}
+                        </Text>
+                      </Pressable>
+                      {scheduledTime && (
+                        <Pressable
+                          onPress={() => setScheduledTime(null)}
+                          className="w-9 h-9 bg-dark-card border-2 border-gray-700 rounded-xl items-center justify-center active:opacity-70"
+                        >
+                          <X size={14} color="#9CA3AF" strokeWidth={2} />
+                        </Pressable>
+                      )}
+                    </View>
+
+                    {/* Android: show picker as dialog on button press */}
+                    {Platform.OS === "android" && showTimePicker && (
+                      <DateTimePicker
+                        mode="time"
+                        value={scheduledTime ?? new Date()}
+                        is24Hour={false}
+                        onChange={(_, date) => {
+                          setShowTimePicker(false);
+                          if (date) setScheduledTime(date);
+                        }}
+                      />
+                    )}
+
+                    {/* iOS: show inline spinner */}
+                    {Platform.OS === "ios" && showTimePicker && (
+                      <View className="bg-dark-card border-2 border-gray-700 rounded-xl overflow-hidden">
+                        <DateTimePicker
+                          mode="time"
+                          value={scheduledTime ?? new Date()}
+                          is24Hour={false}
+                          display="spinner"
+                          themeVariant="dark"
+                          onChange={(_, date) => {
+                            if (date) setScheduledTime(date);
+                          }}
+                        />
+                        <Pressable
+                          onPress={() => setShowTimePicker(false)}
+                          className="mx-4 mb-3 bg-violet-electric border-2 border-gray-900 rounded-xl py-2 items-center active:opacity-70"
+                        >
+                          <Text className="text-white text-sm" style={LABEL_STYLE}>Done</Text>
+                        </Pressable>
+                      </View>
+                    )}
+
+                    {/* Web: native HTML time input */}
+                    {Platform.OS === "web" && showTimePicker && (
+                      <input
+                        type="time"
+                        style={{
+                          backgroundColor: "#1F2937",
+                          border: "2px solid #374151",
+                          borderRadius: 12,
+                          color: "#D1D5DB",
+                          padding: "10px 14px",
+                          fontSize: 14,
+                          width: "100%",
+                          fontFamily: "Nunito_700Bold",
+                        }}
+                        value={scheduledTime
+                          ? `${String(scheduledTime.getHours()).padStart(2, "0")}:${String(scheduledTime.getMinutes()).padStart(2, "0")}`
+                          : ""}
+                        onChange={(e) => {
+                          const [h, m] = e.target.value.split(":").map(Number);
+                          if (!isNaN(h) && !isNaN(m)) {
+                            const d = new Date();
+                            d.setHours(h, m, 0, 0);
+                            setScheduledTime(d);
+                            setShowTimePicker(false);
+                          }
+                        }}
+                      />
+                    )}
                   </View>
 
                   {/* Repeat days */}
