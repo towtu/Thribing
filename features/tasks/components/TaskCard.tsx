@@ -12,6 +12,7 @@ import { useTaskStore } from "@/lib/stores/useTaskStore";
 import {
   deleteTask,
   incrementDailyCount,
+  incrementHabitSession,
   logHabitCompletion,
   undoHabitCompletion,
   toggleTaskComplete,
@@ -359,6 +360,13 @@ function HabitCard({ task }: { task: Task }) {
   const loggedToday = weeklyCompletions.includes(today);
   const weekCount = weeklyCompletions.length;
 
+  const sessionTarget = task.session_target_count ?? 0;
+  const hasSession = sessionTarget > 0;
+  const sessionCurrent = task.session_current_count ?? 0;
+  const sessionUnit = task.session_unit ?? "times";
+  const sessionHasTimer = task.session_has_timer ?? false;
+  const sessionTimer = useTimer(task.id + "_session");
+
   const handleLog = async () => {
     if (!user?.uid || busy) return;
     setBusy(true);
@@ -421,6 +429,45 @@ function HabitCard({ task }: { task: Task }) {
     }
   };
 
+  const handleSessionIncrement = async () => {
+    if (!user?.uid || busy) return;
+    setBusy(true);
+    try {
+      const newCount = sessionCurrent + 1;
+      storeUpdateTask(task.id, { session_current_count: newCount });
+      const { autoLogged } = await incrementHabitSession(
+        user.uid, task.id, newCount, sessionTarget, weeklyCompletions
+      );
+      if (autoLogged) {
+        const newCompletions = [...weeklyCompletions, today];
+        storeUpdateTask(task.id, { weekly_completions: newCompletions, session_current_count: 0 });
+        const currentStats = usePlayerStore.getState();
+        const newStats = processTaskCompletion(task.difficulty, currentStats);
+        const xpGain = newStats.xp - currentStats.xp + (newStats.level > currentStats.level ? currentStats.xp_to_next_level - currentStats.xp : 0);
+        const goldGain = newStats.gold - currentStats.gold;
+        setShowReward(`+${xpGain} XP${goldGain > 0 ? `  +${goldGain} 🪙` : ""}`);
+        setTimeout(() => setShowReward(null), 2000);
+        await updatePlayerStats(user.uid, {
+          hp: newStats.hp, max_hp: newStats.max_hp,
+          xp: newStats.xp, xp_to_next_level: newStats.xp_to_next_level,
+          level: newStats.level, gold: newStats.gold,
+          gold_earned_today: newStats.gold_earned_today,
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleSessionDecrement = async () => {
+    if (!user?.uid || busy || sessionCurrent <= 0) return;
+    const newCount = sessionCurrent - 1;
+    storeUpdateTask(task.id, { session_current_count: newCount });
+    await updateTask(user.uid, task.id, { session_current_count: newCount });
+  };
+
   return (
     <CartoonCard variant="default">
       <View className="gap-3">
@@ -475,6 +522,70 @@ function HabitCard({ task }: { task: Task }) {
             <Trash2 size={16} color="#9CA3AF" strokeWidth={2} />
           </Pressable>
         </View>
+
+        {/* Session progress */}
+        {hasSession && !loggedToday && !sessionHasTimer && (
+          <View className="gap-2">
+            <ProgressBar
+              current={sessionCurrent}
+              total={sessionTarget}
+              unit={sessionUnit}
+              color="violet"
+            />
+            <CounterControl
+              count={sessionCurrent}
+              total={sessionTarget}
+              unit={sessionUnit}
+              onIncrement={handleSessionIncrement}
+              onDecrement={handleSessionDecrement}
+              disabled={busy}
+            />
+          </View>
+        )}
+
+        {hasSession && !loggedToday && sessionHasTimer && (
+          <TimerDisplay
+            elapsed={sessionTimer.elapsed}
+            targetSeconds={sessionTarget * 60}
+            isRunning={sessionTimer.isRunning}
+            onStart={() => sessionTimer.start()}
+            onPause={async () => {
+              sessionTimer.pause();
+              if (!user?.uid) return;
+              const elapsed = Math.floor(sessionTimer.elapsed / 60);
+              if (elapsed > 0) {
+                const newCount = Math.min(elapsed, sessionTarget);
+                storeUpdateTask(task.id, { session_current_count: newCount });
+                const { autoLogged } = await incrementHabitSession(
+                  user.uid, task.id, newCount, sessionTarget, weeklyCompletions
+                );
+                if (autoLogged) {
+                  const newCompletions = [...weeklyCompletions, today];
+                  storeUpdateTask(task.id, { weekly_completions: newCompletions, session_current_count: 0 });
+                  sessionTimer.reset();
+                  const currentStats = usePlayerStore.getState();
+                  const newStats = processTaskCompletion(task.difficulty, currentStats);
+                  const xpGain = newStats.xp - currentStats.xp + (newStats.level > currentStats.level ? currentStats.xp_to_next_level - currentStats.xp : 0);
+                  const goldGain = newStats.gold - currentStats.gold;
+                  setShowReward(`+${xpGain} XP${goldGain > 0 ? `  +${goldGain} 🪙` : ""}`);
+                  setTimeout(() => setShowReward(null), 2000);
+                  await updatePlayerStats(user.uid, {
+                    hp: newStats.hp, max_hp: newStats.max_hp,
+                    xp: newStats.xp, xp_to_next_level: newStats.xp_to_next_level,
+                    level: newStats.level, gold: newStats.gold,
+                    gold_earned_today: newStats.gold_earned_today,
+                  });
+                }
+              }
+            }}
+            onReset={() => {
+              sessionTimer.reset();
+              storeUpdateTask(task.id, { session_current_count: 0 });
+              if (user?.uid) updateTask(user.uid, task.id, { session_current_count: 0 });
+            }}
+            disabled={false}
+          />
+        )}
 
         <View className="gap-1">
           <View className="h-2 bg-gray-200 rounded-full border-2 border-gray-900 overflow-hidden">

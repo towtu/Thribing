@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
-import { User, Shield, Star, Coins, BookOpen, ChevronRight, Flame, Swords } from "lucide-react-native";
+import { User, Shield, Star, Coins, BookOpen, ChevronRight, Flame, Swords, ShoppingBag } from "lucide-react-native";
 import { CLASS_INFO, CLASS_CHANGE_COST, getClassTitle } from "@/features/gamification/types";
 import { ScreenContainer, CartoonCard, CartoonButton, ConfirmModal } from "@/core_ui/components";
 import { useAuthStore } from "@/lib/stores/useAuthStore";
 import { usePlayerStore } from "@/lib/stores/usePlayerStore";
 import { useTaskStore } from "@/lib/stores/useTaskStore";
 import { signOutUser } from "@/features/auth/services";
+import { useFriendsStore } from "@/lib/stores/useFriendsStore";
 
 const LEVEL_TITLES = [
   { min: 1, label: "Novice" },
@@ -35,6 +36,7 @@ export default function ProfileScreen() {
   const [showSignOutModal, setShowSignOutModal] = useState(false);
 
   const playerClass = usePlayerStore((s) => s.player_class);
+  const username = useFriendsStore((s) => s.username);
   const levelTitle = getClassTitle(playerClass, level);
   const classInfo = CLASS_INFO[playerClass];
   const xpPercent = xp_to_next_level > 0 ? Math.min(100, Math.round((xp / xp_to_next_level) * 100)) : 0;
@@ -93,6 +95,11 @@ export default function ProfileScreen() {
               {user?.email && (
                 <Text className="text-xs text-violet-200" style={{ fontFamily: "Nunito_400Regular" }}>
                   {user.email}
+                </Text>
+              )}
+              {username && (
+                <Text className="text-xs text-cyan-400" style={{ fontFamily: "Nunito_600SemiBold" }}>
+                  @{username}
                 </Text>
               )}
             </View>
@@ -212,6 +219,26 @@ export default function ProfileScreen() {
             </CartoonCard>
           </Pressable>
         )}
+
+        {/* Shop */}
+        <Pressable onPress={() => router.push("/shop-screen" as any)} className="active:scale-98">
+          <CartoonCard variant="default">
+            <View className="flex-row items-center gap-3">
+              <View className="w-10 h-10 bg-yellow-sunburst border-2 border-gray-900 rounded-xl items-center justify-center">
+                <ShoppingBag size={18} color="#111827" strokeWidth={2.5} />
+              </View>
+              <View className="flex-1">
+                <Text className="text-sm text-gray-900" style={{ fontFamily: "Nunito_800ExtraBold" }}>
+                  Visit Shop
+                </Text>
+                <Text className="text-xs text-gray-500" style={{ fontFamily: "Nunito_600SemiBold" }}>
+                  Buy potions &amp; heal HP
+                </Text>
+              </View>
+              <ChevronRight size={18} color="#9CA3AF" strokeWidth={2} />
+            </View>
+          </CartoonCard>
+        </Pressable>
 
         {/* How it works */}
         <Pressable onPress={() => router.push("/tutorial" as any)} className="active:scale-98">

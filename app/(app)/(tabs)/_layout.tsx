@@ -6,7 +6,7 @@ import {
   CalendarCheck,
   ListTodo,
   User,
-  ShoppingBag,
+  Users,
   type LucideIcon,
 } from "lucide-react-native";
 
@@ -75,10 +75,10 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="shop"
+        name="social"
         options={{
-          title: "Shop",
-          tabBarIcon: ({ focused }) => <TabIcon Icon={ShoppingBag} focused={focused} />,
+          title: "Social",
+          tabBarIcon: ({ focused }) => <TabIcon Icon={Users} focused={focused} />,
         }}
       />
       <Tabs.Screen
@@ -88,6 +88,8 @@ export default function TabsLayout() {
           tabBarIcon: ({ focused }) => <TabIcon Icon={User} focused={focused} />,
         }}
       />
+      {/* Hide the old shop tab — shop moved to /shop-screen stack route */}
+      <Tabs.Screen name="shop" options={{ href: null }} />
     </Tabs>
   );
 }

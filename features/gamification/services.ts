@@ -7,6 +7,7 @@ import {
 import { db } from "@/lib/firebase";
 import type { PlayerStats, PlayerClass } from "./types";
 import { DEFAULT_PLAYER_STATS } from "@/core_ui/theme";
+import { syncUserProfile } from "@/features/friends/services";
 
 export function subscribeToPlayerStats(
   userId: string,
@@ -39,6 +40,13 @@ export async function updatePlayerStats(
 ) {
   const userRef = doc(db, "users", userId);
   await updateDoc(userRef, stats as any);
+
+  const profileUpdates: Record<string, any> = {};
+  if (stats.level !== undefined) profileUpdates.level = stats.level;
+  if (stats.player_class !== undefined) profileUpdates.player_class = stats.player_class;
+  if (Object.keys(profileUpdates).length > 0) {
+    syncUserProfile(userId, profileUpdates).catch(console.error);
+  }
 }
 
 export async function changePlayerClass(

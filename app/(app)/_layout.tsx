@@ -9,6 +9,8 @@ import {
   useDamageCheck,
   useGoldResetCheck,
 } from "@/features/tasks/hooks";
+import { useFriendsSubscription, useUserProfile } from "@/features/friends/hooks";
+import { useGroupSubscription } from "@/features/groups/hooks";
 import { DeathModal } from "@/features/gamification/components/DeathModal";
 import { rescheduleAllDailies } from "@/features/notifications/service";
 import { updateTask } from "@/features/tasks/services";
@@ -21,6 +23,9 @@ export default function AppLayout() {
   useTaskSubscription();
   usePlayerSubscription();
   useGoldResetCheck();
+  useFriendsSubscription();
+  useUserProfile();
+  useGroupSubscription();
 
   const [deathInfo, setDeathInfo] = useState<{
     levelsLost: number;

@@ -65,6 +65,7 @@ export const useTaskStore = create<TaskState>()((set, get) => ({
           t.completed === n.completed &&
           t.title === n.title &&
           t.current_count === n.current_count &&
+          t.session_current_count === n.session_current_count &&
           t.weekly_completions?.length === n.weekly_completions?.length
         );
       })

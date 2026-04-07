@@ -55,6 +55,11 @@ export function CreateTaskModal({ visible, onClose, defaultType }: CreateTaskMod
 
   // Habit-specific
   const [weeklyTarget, setWeeklyTarget] = useState("3");
+  const [trackSession, setTrackSession] = useState(false);
+  const [sessionTarget, setSessionTarget] = useState("");
+  const [sessionUnit, setSessionUnit] = useState("minutes");
+  const [sessionCustomUnit, setSessionCustomUnit] = useState("");
+  const [sessionHasTimer, setSessionHasTimer] = useState(false);
 
   const resetForm = () => {
     setTitle("");
@@ -67,6 +72,11 @@ export function CreateTaskModal({ visible, onClose, defaultType }: CreateTaskMod
     setHasTimer(false);
     setScheduledTime("");
     setWeeklyTarget("3");
+    setTrackSession(false);
+    setSessionTarget("");
+    setSessionUnit("minutes");
+    setSessionCustomUnit("");
+    setSessionHasTimer(false);
     setError("");
   };
 
@@ -108,6 +118,11 @@ export function CreateTaskModal({ visible, onClose, defaultType }: CreateTaskMod
         // Habit
         ...(defaultType === "habit" && {
           weekly_target: parsedWeekly,
+          ...(trackSession && sessionTarget && parseInt(sessionTarget, 10) >= 1 && {
+            session_target_count: parseInt(sessionTarget, 10),
+            session_unit: sessionUnit === "custom" ? sessionCustomUnit.trim() || "times" : sessionUnit,
+            session_has_timer: sessionUnit === "minutes" && sessionHasTimer,
+          }),
         }),
       });
 
@@ -368,6 +383,84 @@ export function CreateTaskModal({ visible, onClose, defaultType }: CreateTaskMod
                       </Pressable>
                     ))}
                   </View>
+
+                  {/* Session Target */}
+                  <View className="flex-row items-center justify-between bg-dark-card border-2 border-gray-700 rounded-2xl px-4 py-3 mt-2">
+                    <Text className="text-sm text-gray-200" style={LABEL_STYLE}>
+                      Track per-session progress
+                    </Text>
+                    <Switch
+                      value={trackSession}
+                      onValueChange={(v) => { setTrackSession(v); if (!v) { setSessionTarget(""); setSessionHasTimer(false); } }}
+                      trackColor={{ false: "#374151", true: "#8B5CF6" }}
+                      thumbColor={trackSession ? "#FFFFFF" : "#9CA3AF"}
+                    />
+                  </View>
+
+                  {trackSession && (
+                    <View className="gap-2 mt-3">
+                      <Text className="text-sm text-gray-300" style={LABEL_STYLE}>
+                        Session target
+                      </Text>
+                      <View className="flex-row gap-2">
+                        <CartoonInput
+                          variant="dark"
+                          placeholder="e.g. 30"
+                          value={sessionTarget}
+                          onChangeText={setSessionTarget}
+                          keyboardType="numeric"
+                          className="flex-1"
+                        />
+                        <Text className="text-gray-400 self-center text-sm" style={LABEL_STYLE}>×</Text>
+                        <View className="flex-1">
+                          <CartoonInput
+                            variant="dark"
+                            placeholder="unit"
+                            value={sessionUnit === "custom" ? sessionCustomUnit : sessionUnit}
+                            onChangeText={(val) => {
+                              const match = UNIT_PRESETS.find((u) => u === val.toLowerCase());
+                              if (match) setSessionUnit(match);
+                              else { setSessionUnit("custom"); setSessionCustomUnit(val); }
+                            }}
+                          />
+                        </View>
+                      </View>
+                      <View className="flex-row gap-1.5 flex-wrap">
+                        {UNIT_PRESETS.map((u) => (
+                          <Pressable
+                            key={u}
+                            onPress={() => { setSessionUnit(u); if (u !== "minutes") setSessionHasTimer(false); }}
+                            className={`border-2 border-gray-700 rounded-full px-3 py-1 ${
+                              sessionUnit === u ? "bg-violet-electric border-gray-900" : "bg-dark-card"
+                            }`}
+                          >
+                            <Text
+                              className={`text-xs ${sessionUnit === u ? "text-white" : "text-gray-400"}`}
+                              style={LABEL_STYLE}
+                            >
+                              {u}
+                            </Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                      {sessionUnit === "minutes" && sessionTarget !== "" && (
+                        <View className="flex-row items-center justify-between bg-dark-card border-2 border-gray-700 rounded-2xl px-4 py-3">
+                          <View className="flex-row items-center gap-2">
+                            <Clock size={16} color="#8B5CF6" strokeWidth={2.5} />
+                            <Text className="text-sm text-gray-200" style={LABEL_STYLE}>
+                              Use countdown timer
+                            </Text>
+                          </View>
+                          <Switch
+                            value={sessionHasTimer}
+                            onValueChange={setSessionHasTimer}
+                            trackColor={{ false: "#374151", true: "#8B5CF6" }}
+                            thumbColor={sessionHasTimer ? "#FFFFFF" : "#9CA3AF"}
+                          />
+                        </View>
+                      )}
+                    </View>
+                  )}
                 </View>
               )}
 

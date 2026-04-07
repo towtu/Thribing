@@ -45,6 +45,10 @@ function docToTask(docSnap: any): Task {
     weekly_target: data.weekly_target,
     weekly_completions: data.weekly_completions ?? [],
     streak: data.streak ?? 0,
+    session_target_count: data.session_target_count,
+    session_current_count: data.session_current_count ?? 0,
+    session_unit: data.session_unit,
+    session_has_timer: data.session_has_timer,
   };
 }
 
@@ -72,6 +76,9 @@ export interface CreateTaskInput {
   scheduled_time?: string;
   // Habit
   weekly_target?: number;
+  session_target_count?: number;
+  session_unit?: string;
+  session_has_timer?: boolean;
   due_date?: Date | null;
   reminder_time?: string | null;
 }
@@ -104,6 +111,10 @@ export async function createTask(userId: string, input: CreateTaskInput) {
       weekly_target: input.weekly_target ?? 1,
       weekly_completions: [],
       streak: 0,
+      session_target_count: input.session_target_count ?? null,
+      session_current_count: 0,
+      session_unit: input.session_unit ?? null,
+      session_has_timer: input.session_has_timer ?? false,
     };
   }
 
@@ -206,4 +217,45 @@ export const DAILY_UNLOCK_COSTS: Record<import("./types").Difficulty, number> = 
  */
 export async function unlockDaily(userId: string, taskId: string) {
   await updateTask(userId, taskId, { locked: false });
+}
+
+/**
+ * Increment a habit session's current count. Auto-logs as a weekly completion
+ * when newCount >= targetCount.
+ */
+export async function incrementHabitSession(
+  userId: string,
+  taskId: string,
+  newCount: number,
+  targetCount: number,
+  currentCompletions: string[]
+): Promise<{ autoLogged: boolean }> {
+  const today = new Date().toISOString().split("T")[0];
+  if (newCount >= targetCount) {
+    const newCompletions = currentCompletions.includes(today)
+      ? currentCompletions
+      : [...currentCompletions, today];
+    await updateTask(userId, taskId, {
+      session_current_count: 0,
+      weekly_completions: newCompletions,
+    });
+    return { autoLogged: !currentCompletions.includes(today) };
+  } else {
+    await updateTask(userId, taskId, { session_current_count: newCount });
+    return { autoLogged: false };
+  }
+}
+
+/**
+ * Reset session_current_count to 0 for a batch of habit tasks.
+ * Call this on the weekly rollover.
+ */
+export async function resetHabitSessions(userId: string, habitTaskIds: string[]) {
+  if (habitTaskIds.length === 0) return;
+  const batch = writeBatch(db);
+  for (const taskId of habitTaskIds) {
+    const taskDoc = doc(db, "users", userId, "tasks", taskId);
+    batch.update(taskDoc, { session_current_count: 0 });
+  }
+  await batch.commit();
 }

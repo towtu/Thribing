@@ -15,6 +15,7 @@ import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { DEFAULT_PLAYER_STATS } from "@/core_ui/theme";
 import type { AppUser } from "./types";
+import { ensureUserProfile } from "@/features/friends/services";
 
 /**
  * Convert Firebase User to our AppUser type
@@ -145,4 +146,12 @@ export async function ensureUserDocument(user: User) {
       created_at: serverTimestamp(),
     });
   }
+
+  // Always ensure userProfile exists (even if user doc already existed)
+  await ensureUserProfile(user.uid, {
+    displayName: user.displayName,
+    photoURL: user.photoURL,
+    level: DEFAULT_PLAYER_STATS.level,
+    player_class: DEFAULT_PLAYER_STATS.player_class,
+  }).catch(console.error);
 }

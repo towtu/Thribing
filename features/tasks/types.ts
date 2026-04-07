@@ -40,4 +40,12 @@ export interface Task {
   weekly_completions?: string[];
   /** Consecutive weeks where weekly_target was met */
   streak?: number;
+  /** Optional per-session target count (e.g. 30 for a 30-minute gym session) */
+  session_target_count?: number;
+  /** Progress toward the current session's target */
+  session_current_count?: number;
+  /** Unit label for the session target (mirrors `unit` for dailies) */
+  session_unit?: string;
+  /** If true, show a countdown timer instead of a counter for this session */
+  session_has_timer?: boolean;
 }

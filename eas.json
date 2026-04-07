@@ -1,0 +1,54 @@
+{
+  "cli": {
+    "version": ">= 18.4.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyDis0xB3kxITvUFq15ehUsosSQpGI5vdi8",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "thribing-c68a1.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "thribing-c68a1",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "thribing-c68a1.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "6683423787",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:6683423787:web:8877e2bd8b675cf62d266e",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "6683423787-krjcrncuc86hp8e20o3p96nmb311uql4.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "6683423787-16ihcnankeo3f01h84d123lpun25snsi.apps.googleusercontent.com"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyDis0xB3kxITvUFq15ehUsosSQpGI5vdi8",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "thribing-c68a1.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "thribing-c68a1",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "thribing-c68a1.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "6683423787",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:6683423787:web:8877e2bd8b675cf62d266e",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "6683423787-krjcrncuc86hp8e20o3p96nmb311uql4.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "6683423787-16ihcnankeo3f01h84d123lpun25snsi.apps.googleusercontent.com"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyDis0xB3kxITvUFq15ehUsosSQpGI5vdi8",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "thribing-c68a1.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "thribing-c68a1",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "thribing-c68a1.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "6683423787",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:6683423787:web:8877e2bd8b675cf62d266e",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "6683423787-krjcrncuc86hp8e20o3p96nmb311uql4.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "6683423787-16ihcnankeo3f01h84d123lpun25snsi.apps.googleusercontent.com"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
