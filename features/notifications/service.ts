@@ -19,10 +19,14 @@ export async function requestNotificationPermissions(): Promise<boolean> {
   return status === "granted";
 }
 
-/** Parse "HH:MM" into { hour, minute } */
-function parseTime(time: string): { hour: number; minute: number } {
-  const [h, m] = time.split(":").map(Number);
-  return { hour: h, minute: m };
+/** Parse "HH:MM" into { hour, minute }, returns null if invalid */
+function parseTime(time: string): { hour: number; minute: number } | null {
+  const match = time.trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return null;
+  const hour = parseInt(match[1], 10);
+  const minute = parseInt(match[2], 10);
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+  return { hour, minute };
 }
 
 /** Subtract `mins` minutes from a time; returns new { hour, minute } */
@@ -61,7 +65,9 @@ export async function scheduleNotificationsForDaily(
   const granted = await requestNotificationPermissions();
   if (!granted) return [];
 
-  const { hour, minute } = parseTime(scheduledTime);
+  const parsed = parseTime(scheduledTime);
+  if (!parsed) return [];
+  const { hour, minute } = parsed;
   const ids: string[] = [];
 
   for (const day of scheduledDays) {

@@ -32,6 +32,15 @@ const DIFFICULTY_OPTIONS: { value: Difficulty; label: string; color: string }[] 
 const UNIT_PRESETS = ["cups", "km", "times", "minutes", "pages", "reps"];
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+function isValidTime(str: string): boolean {
+  if (!str.trim()) return true;
+  const match = str.trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return false;
+  const h = parseInt(match[1], 10);
+  const m = parseInt(match[2], 10);
+  return h >= 0 && h <= 23 && m >= 0 && m <= 59;
+}
+
 const LABEL_STYLE = { fontFamily: "Nunito_700Bold" };
 const HEADING_STYLE = { fontFamily: "Nunito_800ExtraBold" };
 
@@ -93,6 +102,11 @@ export function CreateTaskModal({ visible, onClose, defaultType }: CreateTaskMod
     const parsedWeekly = parseInt(weeklyTarget, 10);
     if (defaultType === "habit" && (isNaN(parsedWeekly) || parsedWeekly < 1)) {
       setError("Weekly target must be at least 1");
+      return;
+    }
+
+    if (defaultType === "daily" && scheduledTime.trim() && !isValidTime(scheduledTime)) {
+      setError("Time must be in HH:MM format (e.g. 07:00 or 19:30)");
       return;
     }
 

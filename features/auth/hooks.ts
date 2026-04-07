@@ -15,6 +15,21 @@ export function useAuthListener() {
       if (signingOut.current) return;
 
       if (firebaseUser) {
+        // Force server-side token refresh — throws if the account was deleted
+        try {
+          await firebaseUser.getIdToken(true);
+        } catch {
+          signingOut.current = true;
+          try {
+            const { signOutUser } = await import("./services");
+            await signOutUser();
+          } finally {
+            signingOut.current = false;
+          }
+          useAuthStore.getState().setUser(null);
+          return;
+        }
+
         // Google users are always verified; email/password users must verify
         const isGoogleUser = firebaseUser.providerData.some(
           (p) => p.providerId === "google.com"
