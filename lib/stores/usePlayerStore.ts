@@ -25,6 +25,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       current.player_class === stats.player_class &&
       current.gold_earned_today === stats.gold_earned_today &&
       current.gold_reset_date === stats.gold_reset_date &&
+      current.daily_reset_date === stats.daily_reset_date &&
       !current.loading
     ) {
       return;

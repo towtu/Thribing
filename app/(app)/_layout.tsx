@@ -8,6 +8,7 @@ import {
   usePlayerSubscription,
   useDamageCheck,
   useGoldResetCheck,
+  useDailyResetCheck,
 } from "@/features/tasks/hooks";
 import { useFriendsSubscription, useUserProfile } from "@/features/friends/hooks";
 import { useGroupSubscription } from "@/features/groups/hooks";
@@ -23,6 +24,7 @@ export default function AppLayout() {
   useTaskSubscription();
   usePlayerSubscription();
   useGoldResetCheck();
+  useDailyResetCheck();
   useFriendsSubscription();
   useUserProfile();
   useGroupSubscription();

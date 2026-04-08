@@ -27,6 +27,7 @@ export function subscribeToPlayerStats(
         player_class: data.player_class ?? "adventurer",
         gold_earned_today: data.gold_earned_today ?? 0,
         gold_reset_date: data.gold_reset_date ?? "",
+        daily_reset_date: data.daily_reset_date ?? "",
       });
     } else {
       callback({ ...DEFAULT_PLAYER_STATS });

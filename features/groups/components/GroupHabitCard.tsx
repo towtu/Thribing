@@ -1,18 +1,20 @@
 import { useState } from "react";
 import { View, Text, Pressable } from "react-native";
-import { ChevronDown, ChevronUp, LogOut } from "lucide-react-native";
+import { ChevronDown, ChevronUp, LogOut, UserPlus } from "lucide-react-native";
 import { CartoonCard } from "@/core_ui/components";
 import { ProgressBar } from "@/core_ui/components/ProgressBar";
 import { CounterControl } from "@/core_ui/components/CounterControl";
 import { useAuthStore } from "@/lib/stores/useAuthStore";
 import { usePlayerStore } from "@/lib/stores/usePlayerStore";
 import { useGroupStore } from "@/lib/stores/useGroupStore";
+import { useFriendsStore } from "@/lib/stores/useFriendsStore";
 import { useGroupMembers } from "../hooks";
 import {
   logGroupCompletion,
   undoGroupCompletion,
   incrementGroupSession,
   leaveGroup,
+  inviteToGroup,
 } from "../services";
 import { updatePlayerStats } from "@/features/gamification/services";
 import { processTaskCompletion, undoTaskCompletion } from "@/features/gamification/engine";
@@ -32,9 +34,12 @@ export function GroupHabitCard({ group }: GroupHabitCardProps) {
   const playerStats = usePlayerStore();
   const rawMembers = useGroupStore((s) => s.groupMembers[group.id]);
   const groupMembers = rawMembers ?? [];
+  const { friends } = useFriendsStore();
   const [expanded, setExpanded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [showReward, setShowReward] = useState<string | null>(null);
+  const [showInvite, setShowInvite] = useState(false);
+  const [inviting, setInviting] = useState<string | null>(null);
 
   useGroupMembers(group.id);
 
@@ -112,6 +117,29 @@ export function GroupHabitCard({ group }: GroupHabitCardProps) {
     if (!user?.uid) return;
     await leaveGroup(user.uid, group.id).catch(console.error);
   };
+
+  const handleInvite = async (friendUid: string) => {
+    if (!user?.uid) return;
+    const friend = friends.find((f) => f.uid === friendUid);
+    if (!friend) return;
+    setInviting(friendUid);
+    try {
+      await inviteToGroup(
+        group.id,
+        group.title,
+        user.uid,
+        user.displayName ?? "",
+        friendUid,
+        { displayName: friend.displayName, username: friend.username, player_class: friend.player_class, level: friend.level }
+      );
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setInviting(null);
+    }
+  };
+
+  const uninvitedFriends = friends.filter((f) => !(group.member_uids ?? []).includes(f.uid));
 
   return (
     <CartoonCard variant="default">
@@ -225,6 +253,42 @@ export function GroupHabitCard({ group }: GroupHabitCardProps) {
                 </View>
               );
             })}
+          </View>
+        )}
+
+        {/* Invite friends (expanded) */}
+        {expanded && uninvitedFriends.length > 0 && (
+          <View className="border-t-2 border-gray-200 pt-2 gap-2">
+            <Pressable
+              onPress={() => setShowInvite((v) => !v)}
+              className="flex-row items-center gap-1.5"
+            >
+              <UserPlus size={12} color="#9CA3AF" strokeWidth={2} />
+              <Text className="text-xs text-gray-400" style={{ fontFamily: "Nunito_600SemiBold" }}>
+                Invite Friends
+              </Text>
+            </Pressable>
+            {showInvite && (
+              <View className="gap-1.5">
+                {uninvitedFriends.map((f) => (
+                  <Pressable
+                    key={f.uid}
+                    onPress={() => handleInvite(f.uid)}
+                    disabled={inviting === f.uid}
+                    className="flex-row items-center gap-2 bg-dark-card border-2 border-gray-700 rounded-xl px-3 py-2 active:opacity-70"
+                  >
+                    <Text style={{ fontSize: 14 }}>{CLASS_EMOJIS[f.player_class] ?? "⚔️"}</Text>
+                    <View className="flex-1">
+                      <Text className="text-xs text-gray-300" style={{ fontFamily: "Nunito_700Bold" }}>{f.displayName}</Text>
+                      <Text className="text-xs text-gray-500" style={{ fontFamily: "Nunito_400Regular" }}>@{f.username}</Text>
+                    </View>
+                    <Text className="text-xs text-pink-400" style={{ fontFamily: "Nunito_600SemiBold" }}>
+                      {inviting === f.uid ? "Sending..." : "Invite"}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
           </View>
         )}
 

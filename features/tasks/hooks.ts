@@ -3,7 +3,7 @@ import { AppState } from "react-native";
 import { useAuthStore } from "@/lib/stores/useAuthStore";
 import { useTaskStore } from "@/lib/stores/useTaskStore";
 import { usePlayerStore } from "@/lib/stores/usePlayerStore";
-import { subscribeToTasks, updateTask } from "./services";
+import { subscribeToTasks, updateTask, resetDailyCounts } from "./services";
 import { subscribeToPlayerStats, updatePlayerStats } from "@/features/gamification/services";
 import { calculateDamage, processHpDeath } from "@/features/gamification/engine";
 import type { PlayerStats } from "@/features/gamification/types";
@@ -128,6 +128,34 @@ export function useDamageCheck(
   }, [checkDamage]);
 
   return { checkDamage };
+}
+
+/**
+ * On app open (and when tasks finish loading), if the date has changed since
+ * last session, reset all daily task counts (current_count, completed, locked,
+ * damage_dealt) back to 0/false.
+ */
+export function useDailyResetCheck() {
+  const uid = useAuthStore((s) => s.user?.uid);
+  const tasksLoading = useTaskStore((s) => s.loading);
+
+  useEffect(() => {
+    if (!uid || tasksLoading) return;
+    const stats = usePlayerStore.getState();
+    const today = new Date().toISOString().split("T")[0];
+    if (stats.daily_reset_date === today) return;
+
+    const dailyIds = useTaskStore.getState().dailies.map((t) => t.id);
+
+    // Mark as reset for today before the async work to avoid re-triggering
+    const updates = { daily_reset_date: today };
+    usePlayerStore.getState().setStats({ ...stats, ...updates });
+    updatePlayerStats(uid, updates).catch(console.error);
+
+    if (dailyIds.length > 0) {
+      resetDailyCounts(uid, dailyIds).catch(console.error);
+    }
+  }, [uid, tasksLoading]);
 }
 
 /**

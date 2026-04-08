@@ -18,6 +18,8 @@ export interface PlayerStats {
   gold_earned_today: number;
   /** ISO date string (e.g. "2026-04-03") — used to detect day change and reset gold_earned_today */
   gold_reset_date: string;
+  /** ISO date string — used to detect day change and reset daily task counts */
+  daily_reset_date: string;
 }
 
 export interface XpGain {

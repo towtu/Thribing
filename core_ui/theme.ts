@@ -60,4 +60,5 @@ export const DEFAULT_PLAYER_STATS = {
   player_class: "adventurer" as const,
   gold_earned_today: 0,
   gold_reset_date: "",
+  daily_reset_date: "",
 } as const;
